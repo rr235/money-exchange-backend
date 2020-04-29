@@ -2,89 +2,57 @@ const express = require('express');
 const http = require('http');
 const getRates = require('./services/exchange');
 const applyMiddleswares = require('./middlewares');
-
-const port = process.env.PORT || 5000;
+const { PocketExchange } = require('./model');
 
 const app = express();
 const server = http.createServer(app);
+const pocketExchange = new PocketExchange();
+
+const { PORT, FETCH_INTERVAL } = process.env;
+const port = PORT || 5000;
 
 applyMiddleswares(app);
-
-const roundUpDigits = (value, digits) => Number(value.toFixed(digits));
-
-const rates = {
-  EUR: 0.92288,
-  GBP: 0.80434,
-  USD: 1,
-};
-
-const pockets = [
-  { name: 'Euro', code: 'EUR', symbol: '€', balance: roundUpDigits(10, 2) },
-  {
-    name: 'Pound Sterling',
-    code: 'GBP',
-    symbol: '£',
-    balance: roundUpDigits(10, 2),
-  },
-  {
-    name: 'US Dollar',
-    code: 'USD',
-    symbol: '$',
-    balance: roundUpDigits(10, 2),
-  },
-];
 
 server.listen(port, () => {
   console.log(`Listening at ${port}`);
 });
 
-app.post('/exchange', (req, res) => {
-  const { from, to, amount } = req.body;
-  const conversionRate = Number((rates[to] / rates[from]).toFixed(5));
-
-  const fromPocket = pockets.find((pocket) => pocket.code === from);
-
-  if (fromPocket.balance < amount) {
-    res
-      .status(403)
-      .send({ message: "You don't have enough balance for this exchange" });
-    return;
-  }
-
-  const convertedAmount = amount * conversionRate;
-  for (let i in pockets) {
-    if (pockets[i].code === from) {
-      pockets[i].balance = Number((pockets[i].balance - amount).toFixed(2));
-    }
-
-    if (pockets[i].code === to) {
-      pockets[i].balance = Number(
-        (pockets[i].balance + convertedAmount).toFixed(2)
-      );
-    }
-  }
-
-  res.status(200).send(pockets);
+/**
+ * endpoint to get list of all available pockets
+ */
+app.get('/pockets', (req, res) => {
+  res.send(pocketExchange.pockets);
 });
 
+/**
+ * endpoint to get latest exchange rate
+ */
 app.get('/exchangeRate', (req, res) => {
   const { from, to } = req.query;
-  const conversionRate = Number((rates[to] / rates[from]).toFixed(5));
+  const conversionRate = pocketExchange.getConversionRate(from, to);
   res.status(200).send({ conversionRate });
 });
 
-app.get('/pockets', (req, res) => {
-  // const callback = (error, data) => {
-  //   res.setHeader('Content-Type', 'application/json');
+/**
+ * endpoint to convert currency from a pocket
+ */
+app.post('/exchange', (req, res) => {
+  const { from, to, amount } = req.body;
 
-  //   if (error) {
-  //     res.status(500).send(error);
-  //     return;
-  //   }
-
-  //   res.status(200).send(data);
-  // };
-
-  // getRates(callback);
-  res.send(pockets);
+  pocketExchange.updatePocket(from, to, amount);
+  res.status(200).send(pocketExchange.pockets);
 });
+
+// callback that updates latest exchange rates
+const getLatestExchangeRates = (error, { rates }) => {
+  if (error) {
+    return;
+  }
+  pocketExchange.updateExchangeRates(rates);
+};
+
+// get exchange rates at provided interval
+getRates(getLatestExchangeRates);
+setInterval(() => {
+  getRates(getLatestExchangeRates);
+}, FETCH_INTERVAL);

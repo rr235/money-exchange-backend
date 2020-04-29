@@ -9,7 +9,7 @@ module.exports = (callback) => {
   };
 
   const req = https.request(options, (res) => {
-    console.log(`statusCode: ${res.statusCode}`);
+    console.log(`Status: ${res.statusCode} - Querying exchange rates`);
     const data = [];
 
     res.on('data', (chunk) => {
