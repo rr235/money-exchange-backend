@@ -1,32 +1,18 @@
 class PocketExchange {
-  constructor() {
-    this.pockets = [
-      {
-        name: 'Euro',
-        code: 'EUR',
-        symbol: '€',
-        balance: this.roundUpDigits(10, 2),
-      },
-      {
-        name: 'Pound Sterling',
-        code: 'GBP',
-        symbol: '£',
-        balance: this.roundUpDigits(10, 2),
-      },
-      {
-        name: 'US Dollar',
-        code: 'USD',
-        symbol: '$',
-        balance: this.roundUpDigits(10, 2),
-      },
-    ];
+  constructor(pockets) {
+    this.pockets = pockets;
+    this.rates = {};
   }
 
-  roundUpDigits(value, digits) {
-    return Number(value.toFixed(digits));
-  }
-
+  /**
+   * NOTE: This method only returns relative exchange rate.
+   * This is because the free api only return rate to default base USD.
+   * Ideally rates have to fetched based on correct Base.
+   */
   getConversionRate(fromCode, toCode) {
+    if (!this.rates[toCode] || !this.rates[fromCode]) {
+      throw new Error('Cannot find conversion rates');
+    }
     return Number((this.rates[toCode] / this.rates[fromCode]).toFixed(5));
   }
 

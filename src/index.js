@@ -3,10 +3,11 @@ const http = require('http');
 const getRates = require('./services/exchange');
 const applyMiddleswares = require('./middlewares');
 const { PocketExchange } = require('./model');
+const getPockets = require('./data');
 
 const app = express();
 const server = http.createServer(app);
-const pocketExchange = new PocketExchange();
+const pocketExchange = new PocketExchange(getPockets());
 
 const { PORT, FETCH_INTERVAL } = process.env;
 const port = PORT || 5000;
