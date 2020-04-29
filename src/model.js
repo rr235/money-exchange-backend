@@ -40,9 +40,7 @@ class PocketExchange {
     const fromPocket = pockets.find((pocket) => pocket.code === fromCode);
 
     if (fromPocket.balance < amount) {
-      throw new Error({
-        message: "You don't have enough balance for this exchange",
-      });
+      throw new Error("You don't have enough balance for this exchange");
     }
 
     const convertedAmount = amount * this.getConversionRate(fromCode, toCode);

@@ -29,8 +29,13 @@ app.get('/pockets', (req, res) => {
  */
 app.get('/exchangeRate', (req, res) => {
   const { from, to } = req.query;
-  const conversionRate = pocketExchange.getConversionRate(from, to);
-  res.status(200).send({ conversionRate });
+
+  try {
+    const conversionRate = pocketExchange.getConversionRate(from, to);
+    res.status(200).send({ conversionRate });
+  } catch (error) {
+    res.status(403).send(error.message);
+  }
 });
 
 /**
@@ -39,8 +44,12 @@ app.get('/exchangeRate', (req, res) => {
 app.post('/exchange', (req, res) => {
   const { from, to, amount } = req.body;
 
-  pocketExchange.updatePocket(from, to, amount);
-  res.status(200).send(pocketExchange.pockets);
+  try {
+    pocketExchange.updatePocket(from, to, amount);
+    res.status(200).send(pocketExchange.pockets);
+  } catch (error) {
+    res.status(403).send(error.message);
+  }
 });
 
 // callback that updates latest exchange rates
